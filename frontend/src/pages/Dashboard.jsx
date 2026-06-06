@@ -12,6 +12,8 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const navigate = useNavigate();
 
   const getAuthHeader = () => ({
@@ -21,9 +23,16 @@ export default function Dashboard() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-        headers: getAuthHeader(),
-      });
+      const params = new URLSearchParams();
+      if (searchTerm) params.append("search", searchTerm);
+      if (filterStatus !== "all") params.append("status", filterStatus);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/tasks?${params.toString()}`,
+        {
+          headers: getAuthHeader(),
+        }
+      );
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -43,7 +52,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [searchTerm, filterStatus]);
 
   const handleCreateTask = async (formData) => {
     setLoading(true);
@@ -146,10 +155,32 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-primary">Tasko</h1>
             <p className="text-text-muted">Welcome, {user.name}</p>
           </div>
-          <Button variant="secondary" onClick={handleLogout}>
+          <Button variant="secondary" onClick={handleLogout} className="cursor-pointer">
             <LogOut size={18} className="mr-2 inline" />
             Logout
           </Button>
+        </div>
+
+        <div className="mb-6 space-y-4">
+          <div className="flex gap-4 flex-col sm:flex-row">
+            <input type="text" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 px-4 py-2 rounded-lg bg-surface border border-border text-text placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setFilterStatus("all")}
+                className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors ${filterStatus === "all" ? "bg-primary text-white" : "bg-surface border border-border text-text hover:bg-surface-light"}`}>
+                All
+              </button>
+              <button onClick={() => setFilterStatus("pending")}
+                className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors ${filterStatus === "pending" ? "bg-primary text-white" : "bg-surface border border-border text-text hover:bg-surface-light"}`}>
+                Pending
+              </button>
+              <button onClick={() => setFilterStatus("completed")}
+               className={`cursor-pointer px-4 py-2 rounded-lg font-medium transition-colors ${filterStatus === "completed" ? "bg-primary text-white" : "bg-surface border border-border text-text hover:bg-surface-light"}`}>
+                Completed
+              </button>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -158,10 +189,10 @@ export default function Dashboard() {
 
         {showForm && (
           <div className="bg-surface border border-border rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-text mb-4">{editingTask ? "Edit Task" : "Create New Task"}</h2>
+            <h2 className="text-xl font-semibold text-text mb-4"> {editingTask ? "Edit Task" : "Create New Task"}</h2>
             <TaskForm
-              onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
-              onCancel={() => {setShowForm(false); setEditingTask(null);}}
+              onSubmit={ editingTask ? handleUpdateTask : handleCreateTask}
+              onCancel={() => { setShowForm(false); setEditingTask(null);}}
               initialTask={editingTask}
               loading={loading}
             />
@@ -169,50 +200,54 @@ export default function Dashboard() {
         )}
 
         {!showForm && (
-          <Button variant="primary" onClick={() => setShowForm(true)} className="mb-6">
+          <Button variant="primary" onClick={() => setShowForm(true)} className="cursor-pointer mb-6">
             <Plus size={18} className="mr-2 inline" />
             New Task
           </Button>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-xl font-semibold text-text mb-4">Pending</h2>
-            <div className="bg-surface border border-border rounded-lg p-4 min-h-96">
-              {pendingTasks.length === 0 ? (
-                <p className="text-text-muted text-center py-8">no pending tasks</p>
-              ) : (
-                pendingTasks.map((task) => (
-                  <TaskCard key={task._id} task={task} onDelete={handleDeleteTask}
-                    onEdit={(t) => {
-                      setEditingTask(t);
-                      setShowForm(true);
-                    }}
-                    onToggleStatus={handleToggleStatus}
-                  />
-                ))
-              )}
+          {filterStatus === "all" || filterStatus === "pending" ? (
+            <div>
+              <h2 className="text-xl font-semibold text-text mb-4">Pending</h2>
+              <div className="bg-surface border border-border rounded-lg p-4 min-h-96">
+                {pendingTasks.length === 0 ? (
+                  <p className="text-text-muted text-center py-8">no pending tasks</p>
+                ) : (
+                  pendingTasks.map((task) => (
+                    <TaskCard key={task._id} task={task} onDelete={handleDeleteTask}
+                      onEdit={(t) => {
+                        setEditingTask(t);
+                        setShowForm(true);
+                      }}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
 
-          <div>
-            <h2 className="text-xl font-semibold text-text mb-4">Completed</h2>
-            <div className="bg-surface border border-border rounded-lg p-4 min-h-96">
-              {completedTasks.length === 0 ? (
-                <p className="text-text-muted text-center py-8">no completed tasks</p>
-              ) : (
-                completedTasks.map((task) => (
-                  <TaskCard key={task._id} task={task} onDelete={handleDeleteTask}
-                    onEdit={(t) => {
-                      setEditingTask(t);
-                      setShowForm(true);
-                    }}
-                    onToggleStatus={handleToggleStatus}
-                  />
-                ))
-              )}
+          {filterStatus === "all" || filterStatus === "completed" ? (
+            <div>
+              <h2 className="text-xl font-semibold text-text mb-4">Completed</h2>
+              <div className="bg-surface border border-border rounded-lg p-4 min-h-96">
+                {completedTasks.length === 0 ? (
+                  <p className="text-text-muted text-center py-8">no completed tasks</p>
+                ) : (
+                  completedTasks.map((task) => (
+                    <TaskCard key={task._id} task={task} onDelete={handleDeleteTask}
+                      onEdit={(t) => {
+                        setEditingTask(t);
+                        setShowForm(true);
+                      }}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -2,16 +2,28 @@ const Task = require("../models/Task");
 
 const getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ userId: req.user.id }).sort({
-      createdAt: -1,
-    });
+    const { status, search } = req.query;
+
+    const filter = { userId: req.user.id };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const tasks = await Task.find(filter).sort({ createdAt: -1 });
 
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: "server error" });
   }
 };
-
 
 const createTask = async (req, res) => {
   const { title, description, status } = req.body;

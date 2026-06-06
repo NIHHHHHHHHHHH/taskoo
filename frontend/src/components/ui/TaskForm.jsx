@@ -56,10 +56,10 @@ export default function TaskForm({
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" variant="primary" disabled={loading} className="flex-1">
+        <Button type="submit" variant="primary" disabled={loading} className="flex-1 cursor-pointer">
           {loading ? "Saving..." : initialTask ? "Update" : "Create"}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={loading} className="flex-1"> Cancel</Button>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={loading} className="cursor-pointer flex-1"> Cancel</Button>
       </div>
     </form>
   );
