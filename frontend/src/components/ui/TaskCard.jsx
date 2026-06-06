@@ -11,7 +11,7 @@ export default function TaskCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <button onClick={() => onToggleStatus(task._id)} className="text-text-muted hover:text-primary transition-colors">
+            <button onClick={() => onToggleStatus(task._id)} className="text-text-muted hover:text-primary transition-colors cursor-pointer">
               {task.status === "completed" ? (
                 <CheckCircle2 size={20} className="text-success" />
               ) : (
@@ -23,10 +23,10 @@ export default function TaskCard({
           {task.description && (<p className="text-sm text-text-muted ml-7">{task.description}</p>)}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => onEdit(task)} className="text-text-muted hover:text-primary transition-colors">
+          <button onClick={() => onEdit(task)} className="text-text-muted hover:text-primary transition-colors cursor-pointer">
             <Edit2 size={18} />
           </button>
-          <button onClick={() => onDelete(task._id)} className="text-text-muted hover:text-danger transition-colors">
+          <button onClick={() => onDelete(task._id)} className="text-text-muted hover:text-danger transition-colors cursor-pointer">
             <Trash2 size={18} />
           </button>
         </div>
