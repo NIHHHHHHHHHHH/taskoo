@@ -14,6 +14,9 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(5);
   const navigate = useNavigate();
 
   const getAuthHeader = () => ({
@@ -21,38 +24,54 @@ export default function Dashboard() {
     Authorization: `Bearer ${localStorage.getItem("token")}`,
   });
 
-  const fetchTasks = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
-      if (filterStatus !== "all") params.append("status", filterStatus);
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/tasks?${params.toString()}`,
-        {
-          headers: getAuthHeader(),
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          return;
-        }
-        throw new Error("failed to fetch tasks");
-      }
-
-      const data = await response.json();
-      setTasks(data);
-    } catch (err) {
-      setError("error loading tasks");
+   const fetchTasks = async () => {
+  try {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    
+    if (filterStatus !== "all") {
+      params.append("status", filterStatus);
+      params.append("page", currentPage);
+      params.append("limit", limit);
+    } else {
+      // When "All" is selected, fetch all tasks without pagination
+      params.append("limit", 1000);
+      params.append("page", 1);
     }
-  };
 
-  useEffect(() => {
-    fetchTasks();
-  }, [searchTerm, filterStatus]);
+    const response = await fetch(
+      `${API_BASE_URL}/api/tasks?${params.toString()}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      throw new Error("failed to fetch tasks");
+    }
+
+    const data = await response.json();
+    setTasks(Array.isArray(data) ? data : data.tasks);
+    setTotalPages(data.totalPages || 1);
+    setCurrentPage(data.page || 1);
+  } catch (err) {
+    setError("error loading tasks");
+  }
+};
+
+
+   useEffect(() => {
+   setCurrentPage(1);
+   }, [searchTerm, filterStatus]);
+
+   useEffect(() => {
+     fetchTasks();
+   }, [searchTerm, filterStatus, currentPage]);
 
   const handleCreateTask = async (formData) => {
     setLoading(true);
@@ -181,8 +200,31 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
 
+          {filterStatus !== "all" && totalPages > 1 && (
+           <div className="flex gap-2 items-center justify-between">
+             <button
+               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+               disabled={currentPage === 1}
+               className="px-4 py-2 rounded-lg bg-surface border border-border text-text hover:bg-surface-light disabled:opacity-50 cursor-pointer transition-colors"
+             >
+               Previous
+             </button>
+             <span className="text-text-muted text-sm">
+               Page {currentPage} of {totalPages}
+             </span>
+             <button
+               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+               disabled={currentPage === totalPages}
+               className="px-4 py-2 rounded-lg bg-surface border border-border text-text hover:bg-surface-light disabled:opacity-50 cursor-pointer transition-colors"
+             >
+               Next
+             </button>
+           </div>
+         )}
+        </div>
+        
+        
         {error && (
           <p className="text-sm text-white bg-danger bg-opacity-10 p-3 rounded mb-4">{error}</p>
         )}

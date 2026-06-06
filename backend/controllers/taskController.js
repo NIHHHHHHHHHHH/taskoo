@@ -2,7 +2,7 @@ const Task = require("../models/Task");
 
 const getTasks = async (req, res) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, page = 1, limit = 5 } = req.query;
 
     const filter = { userId: req.user.id };
 
@@ -17,9 +17,19 @@ const getTasks = async (req, res) => {
       ];
     }
 
-    const tasks = await Task.find(filter).sort({ createdAt: -1 });
+    const total = await Task.countDocuments(filter);
+    const tasks = await Task.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
-    res.json(tasks);
+    res.json({
+      tasks,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err) {
     res.status(500).json({ message: "server error" });
   }
